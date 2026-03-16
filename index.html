@@ -619,8 +619,17 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function() {
+  // =====================================================================
+  // Supabase 설정 — 아래 두 값을 본인의 Supabase 프로젝트 값으로 교체하세요
+  // =====================================================================
+  const SUPABASE_URL = 'https://mmvbindojmcgwpyturen.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_4-fcrdwmbGij34WNd79EwA_7759Q3ee';
+
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   const MANAGER_PW = 'manager1234';
   const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -643,16 +652,52 @@
   };
 
   let isManager = sessionStorage.getItem('isManager') === 'true';
-  function loadBookings() {
-    try { return JSON.parse(localStorage.getItem('studyroom_bookings') || '{}'); }
-    catch { return {}; }
-  }
-  function saveBookings(d) { localStorage.setItem('studyroom_bookings', JSON.stringify(d)); }
-  let bookings = loadBookings();
+  let bookings = {};
 
-  function addBooking(id, data) { bookings[id] = data; saveBookings(bookings); renderAll(); }
-  function updateBooking(id, data) { bookings[id] = data; saveBookings(bookings); renderAll(); }
-  function deleteBooking(id) { delete bookings[id]; saveBookings(bookings); renderAll(); }
+  // ── Supabase CRUD ──
+  async function fetchBookings() {
+    const { data, error } = await sb.from('bookings').select('*');
+    if (error) { console.error('불러오기 실패:', error); return; }
+    bookings = {};
+    data.forEach(row => {
+      bookings[row.room_id] = {
+        date: row.date,
+        day: row.day,
+        manager: row.manager,
+        cohort: row.cohort,
+        team: row.team,
+        type: row.type
+      };
+    });
+    renderAll();
+  }
+
+  async function addBooking(id, data) {
+    const { error } = await sb.from('bookings').upsert({
+      room_id: id, date: data.date, day: data.day,
+      manager: data.manager, cohort: data.cohort,
+      team: data.team, type: data.type
+    });
+    if (error) { alert('저장 실패: ' + error.message); return; }
+    bookings[id] = data;
+    renderAll();
+  }
+
+  async function updateBooking(id, data) { await addBooking(id, data); }
+
+  async function deleteBooking(id) {
+    const { error } = await sb.from('bookings').delete().eq('room_id', id);
+    if (error) { alert('삭제 실패: ' + error.message); return; }
+    delete bookings[id];
+    renderAll();
+  }
+
+  // ── 실시간 동기화: 다른 매니저의 변경사항이 자동 반영됩니다 ──
+  sb.channel('bookings-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+      fetchBookings();
+    })
+    .subscribe();
 
   function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
   function todayStr() {
@@ -867,10 +912,11 @@
   document.getElementById('btn-login-submit').addEventListener('click', attemptLogin);
   inputPw.addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
 
-  btnReset.addEventListener('click', () => {
+  btnReset.addEventListener('click', async () => {
     if (confirm('모든 예약 데이터를 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+      const { error } = await sb.from('bookings').delete().neq('room_id', '');
+      if (error) { alert('초기화 실패: ' + error.message); return; }
       bookings = {};
-      saveBookings(bookings);
       renderAll();
     }
   });
@@ -941,7 +987,8 @@
     closeBookingModal();
   });
 
-  renderAll();
+  // 초기 로드: Supabase에서 데이터 불러오기
+  fetchBookings();
 })();
 </script>
 </body>
