@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>플레이데이터 · 스터디룸 예약</title>
+<style>
+  @import url("https://vendor-cdn.imweb.me/css/pretendard.css");
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: #f5f5f5;
+    color: #212121;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Top bar (logo) ── */
+  .top-bar {
+    background: #fff;
+    border-bottom: 1px solid #e7e7e7;
+    height: 70px;
+    padding: 0 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .top-bar .logo-link {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    text-decoration: none;
+  }
+  .top-bar .logo-img {
+    height: 32px;
+    object-fit: contain;
+  }
+
+  /* ── Header (sub) ── */
+  .header {
+    background: #212121;
+    color: #fff;
+    padding: 0 30px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .header h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: -0.3px;
+  }
+  .header .date {
+    font-size: 0.8rem;
+    color: #999;
+    white-space: nowrap;
+  }
+  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .btn-header {
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .3s;
+  }
+  .btn-manager {
+    background: transparent;
+    color: #fff;
+    border: 1.5px solid #fff;
+  }
+  .btn-manager:hover {
+    background: #504197;
+    border-color: #504197;
+  }
+  .btn-manager.logged-in {
+    background: #504197;
+    color: #fff;
+    border-color: #504197;
+  }
+  .btn-manager.logged-in:hover {
+    background: #3d3175;
+    border-color: #3d3175;
+  }
+  .btn-reset {
+    background: transparent;
+    color: #ccc;
+    border: 1.5px solid #555;
+    display: none;
+  }
+  .btn-reset:hover {
+    background: #e53e3e;
+    color: #fff;
+    border-color: #e53e3e;
+  }
+
+  /* ── Notice banner ── */
+  .notice-banner {
+    background: #fff;
+    border-bottom: 1px solid #e7e7e7;
+    padding: 16px 30px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .notice-box { flex: 1; min-width: 220px; }
+  .notice-box h3 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #212121;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .notice-box ul { list-style: none; padding: 0; }
+  .notice-box li {
+    font-size: 0.78rem;
+    color: #555;
+    padding: 2.5px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .priority-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #504197;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .notice-warning {
+    background: #f8f6ff;
+    border: 1.5px solid #504197;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    color: #212121;
+    font-weight: 500;
+    line-height: 1.6;
+    min-width: 240px;
+  }
+  .notice-warning strong { color: #504197; font-weight: 700; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    background: #fff;
+    border-bottom: 2px solid #e7e7e7;
+    padding: 0 30px;
+  }
+  .tab {
+    padding: 14px 32px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+    color: #999;
+    position: relative;
+    transition: color .3s;
+    letter-spacing: -0.2px;
+  }
+  .tab:hover { color: #212121; }
+  .tab.active { color: #504197; }
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0; right: 0;
+    height: 3px;
+    background: #504197;
+    border-radius: 3px 3px 0 0;
+  }
+
+  /* ── Floor container ── */
+  .floor-container { padding: 24px 30px; display: none; max-width: 1232px; margin: 0 auto; }
+  .floor-container.active { display: block; }
+  .floor-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #212121;
+    letter-spacing: -0.3px;
+  }
+
+  /* ── Floor plan ── */
+  .floor-plan {
+    background: #fff;
+    border: 1.5px solid #e7e7e7;
+    border-radius: 10px;
+    padding: 24px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .floor-plan-label {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: #fff;
+    padding: 0 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #999;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .plan-single { display: flex; justify-content: center; }
+  .plan-single .room-card { max-width: 340px; width: 100%; }
+
+  .plan-5f {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 14px;
+    grid-template-areas:
+      "a1 b1 c1"
+      "a2 b2 right-bottom"
+      ".  .  right-bottom";
+  }
+  .plan-5f .room-5f-a1 { grid-area: a1; }
+  .plan-5f .room-5f-a2 { grid-area: a2; }
+  .plan-5f .room-5f-b1 { grid-area: b1; }
+  .plan-5f .room-5f-b2 { grid-area: b2; }
+  .plan-5f .room-5f-c1 { grid-area: c1; }
+  .plan-5f-right-bottom {
+    grid-area: right-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* ── Room card ── */
+  .room-card {
+    background: #fafafa;
+    border: 1.5px solid #e7e7e7;
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all .3s;
+    position: relative;
+  }
+  .room-card:hover {
+    border-color: #504197;
+    box-shadow: 0 6px 12px rgba(80,65,151,.12);
+    transform: translateY(-2px);
+  }
+  .room-card.reserved {
+    background: #f8f6ff;
+    border-color: #504197;
+  }
+  .room-card.consulting { border-color: #212121; }
+  .room-card.consulting.reserved {
+    background: #f8f6ff;
+    border-color: #504197;
+  }
+  .room-card .room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .room-card .room-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #212121;
+    letter-spacing: -0.3px;
+  }
+  .room-card .room-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 20px;
+    background: #f0f0f0;
+    color: #757575;
+  }
+  .room-card.reserved .room-badge { background: #e8e0ff; color: #504197; }
+  .room-card.consulting .room-badge { background: #212121; color: #fff; }
+  .room-card.consulting.reserved .room-badge { background: #504197; color: #fff; }
+  .room-card .room-meta {
+    font-size: 0.75rem;
+    color: #999;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 10px;
+  }
+  .room-card .room-status { font-size: 0.8rem; font-weight: 600; }
+  .room-card .room-status.available { color: #00a0e9; }
+  .room-card .room-status.booked { color: #504197; }
+  .room-card .room-booking-info {
+    font-size: 0.75rem;
+    color: #555;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  /* Manager buttons */
+  .room-actions {
+    display: none;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e7e7e7;
+  }
+  body.manager-mode .room-actions { display: flex; }
+  .room-actions button {
+    flex: 1;
+    padding: 7px 8px;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .3s;
+  }
+  .btn-add-booking { background: #504197; color: #fff; }
+  .btn-add-booking:hover { background: #3d3175; }
+  .btn-edit-booking { background: #f0f0f0; color: #555; }
+  .btn-edit-booking:hover { background: #e7e7e7; }
+  .btn-delete-booking { background: #fef2f2; color: #e53e3e; }
+  .btn-delete-booking:hover { background: #fed7d7; }
+
+  /* ── Modals ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 440px;
+    padding: 28px;
+    box-shadow: 0 6px 12px rgba(0,0,0,.175);
+    animation: slideUp .3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .modal h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #212121;
+    letter-spacing: -0.3px;
+  }
+  .modal .modal-sub { font-size: 0.82rem; color: #999; margin-bottom: 20px; }
+  .modal label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 5px;
+    margin-top: 14px;
+  }
+  .modal label:first-of-type { margin-top: 0; }
+  .modal input, .modal select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #e7e7e7;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color .3s;
+    background: #fff;
+    color: #212121;
+  }
+  .modal input:focus, .modal select:focus { border-color: #504197; }
+  .modal input[readonly] { background: #fafafa; color: #999; }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+  .modal-actions button {
+    flex: 1;
+    padding: 11px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .3s;
+  }
+  .btn-cancel {
+    background: #fff;
+    color: #555;
+    border: 1.5px solid #e7e7e7;
+  }
+  .btn-cancel:hover { background: #f5f5f5; border-color: #ccc; }
+  .btn-save {
+    background: #504197;
+    color: #fff;
+    border: 1.5px solid #504197;
+  }
+  .btn-save:hover { background: #3d3175; border-color: #3d3175; }
+
+  .error-msg {
+    color: #e53e3e;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 8px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  .date-row { display: flex; gap: 8px; align-items: flex-end; }
+  .date-row > div:first-child { flex: 1; }
+  .date-row > div:last-child { width: 90px; }
+
+  .detail-row {
+    display: flex;
+    padding: 10px 0;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 0.88rem;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label {
+    width: 80px;
+    font-weight: 600;
+    color: #999;
+    flex-shrink: 0;
+  }
+  .detail-value { color: #212121; font-weight: 500; }
+  .detail-empty {
+    text-align: center;
+    padding: 30px 0;
+    color: #999;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .plan-5f {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "a1 b1"
+        "a2 b2"
+        "c1 right-bottom"
+        ". right-bottom";
+    }
+    .top-bar { padding: 0 16px; height: 56px; }
+    .header { padding: 0 16px; height: 46px; }
+    .tabs { padding: 0 16px; }
+    .tab { padding: 12px 18px; font-size: 0.88rem; }
+    .floor-container { padding: 16px; }
+    .notice-banner { padding: 14px 16px; gap: 14px; }
+  }
+  @media (max-width: 520px) {
+    .plan-5f {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "a1" "a2" "b1" "b2" "c1" "right-bottom";
+    }
+    .header h2 { font-size: 0.88rem; }
+    .header-right { width: 100%; justify-content: flex-end; }
+    .plan-single .room-card { max-width: 100%; }
+    .top-bar { height: 50px; }
+    .top-bar .logo-img { height: 26px; }
+    .header { height: auto; padding: 10px 16px; flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar with Playdata logo -->
+<div class="top-bar">
+  <a class="logo-link" href="https://playdata.io/" target="_blank" rel="noopener">
+    <img class="logo-img" src="./playdata-logo.png" alt="플레이데이터">
+  </a>
+</div>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <h2>플레이데이터 스터디 예약</h2>
+    <span class="date" id="today-date"></span>
+  </div>
+  <div class="header-right">
+    <button class="btn-header btn-reset" id="btn-reset">전체 초기화</button>
+    <button class="btn-header btn-manager" id="btn-manager">매니저 로그인</button>
+  </div>
+</header>
+
+<!-- Notice Banner -->
+<div class="notice-banner">
+  <div class="notice-box">
+    <h3>📋 예약 우선순위</h3>
+    <ul>
+      <li><span class="priority-num">1</span> 멘토링</li>
+      <li><span class="priority-num">2</span> 최종 프로젝트</li>
+      <li><span class="priority-num">3</span> 중간 프로젝트</li>
+      <li><span class="priority-num">4</span> 개별 스터디</li>
+    </ul>
+  </div>
+  <div class="notice-warning">
+    ⚠️ 당일 <strong>오전 9시 이전</strong>, 각 담당 매니저님께 <strong>대면으로만</strong> 신청 가능합니다.<br>
+    DM(메신저) 신청은 <strong>불가</strong>합니다.
+  </div>
+</div>
+
+<!-- Tabs -->
+<nav class="tabs">
+  <button class="tab active" data-floor="3">3층</button>
+  <button class="tab" data-floor="4">4층</button>
+  <button class="tab" data-floor="5">5층</button>
+</nav>
+
+<!-- 3층 -->
+<section class="floor-container active" id="floor-3">
+  <h2 class="floor-title">3층 상담실</h2>
+  <div class="floor-plan">
+    <span class="floor-plan-label">FLOOR PLAN — 3F</span>
+    <div class="plan-single" id="plan-3"></div>
+  </div>
+</section>
+
+<!-- 4층 -->
+<section class="floor-container" id="floor-4">
+  <h2 class="floor-title">4층 상담실</h2>
+  <div class="floor-plan">
+    <span class="floor-plan-label">FLOOR PLAN — 4F</span>
+    <div class="plan-single" id="plan-4"></div>
+  </div>
+</section>
+
+<!-- 5층 -->
+<section class="floor-container" id="floor-5">
+  <h2 class="floor-title">5층 스터디룸</h2>
+  <div class="floor-plan">
+    <span class="floor-plan-label">FLOOR PLAN — 5F</span>
+    <div class="plan-5f" id="plan-5"></div>
+  </div>
+</section>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="modal-login">
+  <div class="modal">
+    <h2>매니저 로그인</h2>
+    <p class="modal-sub">관리자 비밀번호를 입력하세요</p>
+    <label>비밀번호</label>
+    <input type="password" id="input-pw" placeholder="비밀번호 입력">
+    <p class="error-msg" id="login-error">비밀번호가 올바르지 않습니다</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btn-login-cancel">취소</button>
+      <button class="btn-save" id="btn-login-submit">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Detail Modal (trainee read-only) -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal">
+    <h2 id="detail-modal-title"></h2>
+    <p class="modal-sub" id="detail-modal-sub"></p>
+    <div id="detail-modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btn-detail-close" style="flex:none;width:100%;">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Booking Modal (manager only) -->
+<div class="modal-overlay" id="modal-booking">
+  <div class="modal">
+    <h2 id="booking-modal-title">예약 추가</h2>
+    <p class="modal-sub" id="booking-modal-sub"></p>
+    <label>날짜</label>
+    <div class="date-row">
+      <div><input type="date" id="input-date"></div>
+      <div><input type="text" id="input-day" readonly placeholder="요일"></div>
+    </div>
+    <label>담당 매니저</label>
+    <input type="text" id="input-manager" placeholder="매니저 이름">
+    <label>기수</label>
+    <input type="text" id="input-cohort" placeholder="예) 한화 25기, SKN 26기">
+    <label>팀명</label>
+    <input type="text" id="input-team" placeholder="팀명 입력">
+    <label>유형</label>
+    <select id="input-type">
+      <option value="">선택하세요</option>
+      <option value="멘토링">멘토링</option>
+      <option value="최종 프로젝트">최종 프로젝트</option>
+      <option value="중간 프로젝트">중간 프로젝트</option>
+      <option value="개별 스터디">개별 스터디</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btn-booking-cancel">취소</button>
+      <button class="btn-save" id="btn-booking-save">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const MANAGER_PW = 'manager1234';
+  const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+
+  const TABLES = {
+    3: [
+      { id: '3F-A1', name: '3F-A1', seats: 6, monitor: true, type: 'consulting' }
+    ],
+    4: [
+      { id: '4F-A1', name: '4F-A1', seats: 6, monitor: true, type: 'consulting' }
+    ],
+    5: [
+      { id: '5F-A1', name: '5F-A1', seats: 8, monitor: true,  type: 'table', area: 'a1' },
+      { id: '5F-A2', name: '5F-A2', seats: 8, monitor: true,  type: 'table', area: 'a2' },
+      { id: '5F-B1', name: '5F-B1', seats: 6, monitor: false, type: 'table', area: 'b1' },
+      { id: '5F-B2', name: '5F-B2', seats: 6, monitor: false, type: 'table', area: 'b2' },
+      { id: '5F-C1', name: '5F-C1', seats: 8, monitor: true,  type: 'table', area: 'c1' },
+      { id: '5F-C2', name: '5F-C2', seats: 4, monitor: false, type: 'table', area: 'rb' },
+      { id: '5F-D1', name: '5F-D1', seats: 4, monitor: true,  type: 'consulting', area: 'rb' }
+    ]
+  };
+
+  let isManager = sessionStorage.getItem('isManager') === 'true';
+  function loadBookings() {
+    try { return JSON.parse(localStorage.getItem('studyroom_bookings') || '{}'); }
+    catch { return {}; }
+  }
+  function saveBookings(d) { localStorage.setItem('studyroom_bookings', JSON.stringify(d)); }
+  let bookings = loadBookings();
+
+  function addBooking(id, data) { bookings[id] = data; saveBookings(bookings); renderAll(); }
+  function updateBooking(id, data) { bookings[id] = data; saveBookings(bookings); renderAll(); }
+  function deleteBooking(id) { delete bookings[id]; saveBookings(bookings); renderAll(); }
+
+  function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function todayStr() {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  }
+  function getDayName(ds) {
+    const d = new Date(ds + 'T00:00:00');
+    return isNaN(d.getTime()) ? '' : DAY_NAMES[d.getDay()] + '요일';
+  }
+  function getTableLabel(t) {
+    if (t.type === 'consulting') return '상담실';
+    return `${t.seats}인석`;
+  }
+
+  const now = new Date();
+  document.getElementById('today-date').textContent =
+    `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 ${DAY_NAMES[now.getDay()]}요일`;
+
+  const btnManager = document.getElementById('btn-manager');
+  const btnReset = document.getElementById('btn-reset');
+  function applyManagerMode() {
+    if (isManager) {
+      document.body.classList.add('manager-mode');
+      btnManager.textContent = '로그아웃';
+      btnManager.classList.add('logged-in');
+      btnReset.style.display = 'inline-block';
+    } else {
+      document.body.classList.remove('manager-mode');
+      btnManager.textContent = '매니저 로그인';
+      btnManager.classList.remove('logged-in');
+      btnReset.style.display = 'none';
+    }
+  }
+  applyManagerMode();
+
+  const tabs = document.querySelectorAll('.tab');
+  const floors = document.querySelectorAll('.floor-container');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      floors.forEach(f => f.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('floor-' + tab.dataset.floor).classList.add('active');
+    });
+  });
+
+  function buildRoomCard(t) {
+    const bk = bookings[t.id];
+    const isConsulting = t.type === 'consulting';
+    const label = getTableLabel(t);
+    const monitorTxt = t.monitor ? '🖥️ 모니터' : '— 모니터 없음';
+    const displayName = t.id === '5F-D1' ? '5층 상담실' : t.name;
+
+    let cls = 'room-card';
+    if (bk) cls += ' reserved';
+    if (isConsulting) cls += ' consulting';
+
+    let statusHTML;
+    if (bk) {
+      statusHTML = `<div class="room-status booked">예약됨</div>
+        <div class="room-booking-info">
+          ${esc(bk.date)} (${esc(bk.day)})<br>
+          ${esc(bk.cohort)} · ${esc(bk.team)}<br>
+          ${esc(bk.type)} · 담당: ${esc(bk.manager)}
+        </div>`;
+    } else {
+      statusHTML = `<div class="room-status available">예약 가능</div>`;
+    }
+
+    let actionsHTML;
+    if (bk) {
+      actionsHTML = `<div class="room-actions">
+        <button class="btn-edit-booking" data-id="${t.id}">✏️ 수정</button>
+        <button class="btn-delete-booking" data-id="${t.id}">🗑️ 삭제</button>
+      </div>`;
+    } else {
+      actionsHTML = `<div class="room-actions">
+        <button class="btn-add-booking" data-id="${t.id}">+ 예약 추가</button>
+      </div>`;
+    }
+
+    return `<div class="${cls}" data-table-id="${t.id}">
+      <div class="room-header">
+        <span class="room-name">${esc(displayName)}</span>
+        <span class="room-badge">${label}</span>
+      </div>
+      <div class="room-meta">
+        <span>${monitorTxt}</span>
+        <span>${t.seats}인석</span>
+      </div>
+      ${statusHTML}
+      ${actionsHTML}
+    </div>`;
+  }
+
+  function renderAll() {
+    document.getElementById('plan-3').innerHTML = TABLES[3].map(t => buildRoomCard(t)).join('');
+    document.getElementById('plan-4').innerHTML = TABLES[4].map(t => buildRoomCard(t)).join('');
+
+    const plan5 = document.getElementById('plan-5');
+    const byArea = {};
+    TABLES[5].forEach(t => {
+      if (!byArea[t.area]) byArea[t.area] = [];
+      byArea[t.area].push(t);
+    });
+    let html5 = '';
+    ['a1','a2','b1','b2','c1'].forEach(area => {
+      if (byArea[area]) {
+        byArea[area].forEach(t => {
+          html5 += `<div class="room-5f-${area}">${buildRoomCard(t)}</div>`;
+        });
+      }
+    });
+    if (byArea['rb']) {
+      html5 += `<div class="plan-5f-right-bottom">`;
+      byArea['rb'].forEach(t => { html5 += buildRoomCard(t); });
+      html5 += `</div>`;
+    }
+    plan5.innerHTML = html5;
+    bindCardEvents();
+  }
+
+  function bindCardEvents() {
+    document.querySelectorAll('.room-card').forEach(card => {
+      card.addEventListener('click', e => {
+        if (e.target.closest('.room-actions')) return;
+        const tableId = card.dataset.tableId;
+        if (isManager) {
+          openBookingModal(tableId, bookings[tableId] ? 'edit' : 'add');
+        } else {
+          openDetailModal(tableId);
+        }
+      });
+    });
+    document.querySelectorAll('.btn-add-booking').forEach(btn => {
+      btn.addEventListener('click', e => { e.stopPropagation(); openBookingModal(btn.dataset.id, 'add'); });
+    });
+    document.querySelectorAll('.btn-edit-booking').forEach(btn => {
+      btn.addEventListener('click', e => { e.stopPropagation(); openBookingModal(btn.dataset.id, 'edit'); });
+    });
+    document.querySelectorAll('.btn-delete-booking').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (confirm('정말 삭제하시겠습니까?')) deleteBooking(btn.dataset.id);
+      });
+    });
+  }
+
+  const modalDetail = document.getElementById('modal-detail');
+  function openDetailModal(tableId) {
+    let t = null;
+    for (const fl of [3,4,5]) { t = TABLES[fl].find(x => x.id === tableId); if (t) break; }
+    const displayName = t.id === '5F-D1' ? '5층 상담실' : t.name;
+    document.getElementById('detail-modal-title').textContent = displayName;
+    document.getElementById('detail-modal-sub').textContent = `${getTableLabel(t)} · ${t.seats}인석 · ${t.monitor ? '모니터 있음' : '모니터 없음'}`;
+
+    const body = document.getElementById('detail-modal-body');
+    const bk = bookings[tableId];
+    if (bk) {
+      body.innerHTML = `
+        <div class="detail-row"><span class="detail-label">날짜</span><span class="detail-value">${esc(bk.date)} (${esc(bk.day)})</span></div>
+        <div class="detail-row"><span class="detail-label">기수</span><span class="detail-value">${esc(bk.cohort)}</span></div>
+        <div class="detail-row"><span class="detail-label">팀명</span><span class="detail-value">${esc(bk.team)}</span></div>
+        <div class="detail-row"><span class="detail-label">유형</span><span class="detail-value">${esc(bk.type)}</span></div>
+        <div class="detail-row"><span class="detail-label">담당</span><span class="detail-value">${esc(bk.manager)}</span></div>`;
+    } else {
+      body.innerHTML = `<div class="detail-empty">현재 예약이 없습니다.<br>담당 매니저님께 대면으로 신청하세요.</div>`;
+    }
+    modalDetail.classList.add('open');
+  }
+  document.getElementById('btn-detail-close').addEventListener('click', () => modalDetail.classList.remove('open'));
+  modalDetail.addEventListener('click', e => { if (e.target === modalDetail) modalDetail.classList.remove('open'); });
+
+  const modalLogin = document.getElementById('modal-login');
+  const inputPw = document.getElementById('input-pw');
+  const loginError = document.getElementById('login-error');
+  function openLoginModal() {
+    inputPw.value = '';
+    loginError.classList.remove('show');
+    modalLogin.classList.add('open');
+    setTimeout(() => inputPw.focus(), 100);
+  }
+  function closeLoginModal() { modalLogin.classList.remove('open'); }
+
+  btnManager.addEventListener('click', () => {
+    if (isManager) {
+      isManager = false;
+      sessionStorage.removeItem('isManager');
+      applyManagerMode();
+      renderAll();
+    } else {
+      openLoginModal();
+    }
+  });
+  document.getElementById('btn-login-cancel').addEventListener('click', closeLoginModal);
+  modalLogin.addEventListener('click', e => { if (e.target === modalLogin) closeLoginModal(); });
+
+  function attemptLogin() {
+    if (inputPw.value === MANAGER_PW) {
+      isManager = true;
+      sessionStorage.setItem('isManager', 'true');
+      applyManagerMode();
+      renderAll();
+      closeLoginModal();
+    } else {
+      loginError.classList.add('show');
+      inputPw.focus();
+      inputPw.select();
+    }
+  }
+  document.getElementById('btn-login-submit').addEventListener('click', attemptLogin);
+  inputPw.addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
+
+  btnReset.addEventListener('click', () => {
+    if (confirm('모든 예약 데이터를 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+      bookings = {};
+      saveBookings(bookings);
+      renderAll();
+    }
+  });
+
+  const modalBooking = document.getElementById('modal-booking');
+  const bookingTitle = document.getElementById('booking-modal-title');
+  const bookingSub = document.getElementById('booking-modal-sub');
+  const inputDate = document.getElementById('input-date');
+  const inputDay = document.getElementById('input-day');
+  const inputMgr = document.getElementById('input-manager');
+  const inputCohort = document.getElementById('input-cohort');
+  const inputTeam = document.getElementById('input-team');
+  const inputType = document.getElementById('input-type');
+  let currentBookingTableId = null;
+  let currentBookingMode = 'add';
+
+  inputDate.addEventListener('change', () => { inputDay.value = getDayName(inputDate.value); });
+
+  function openBookingModal(tableId, mode) {
+    currentBookingTableId = tableId;
+    currentBookingMode = mode;
+    let t = null;
+    for (const fl of [3,4,5]) { t = TABLES[fl].find(x => x.id === tableId); if (t) break; }
+    const displayName = t.id === '5F-D1' ? '5층 상담실' : t.name;
+    bookingSub.textContent = `${displayName} · ${getTableLabel(t)} · ${t.seats}인석 · ${t.monitor ? '모니터 있음' : '모니터 없음'}`;
+
+    if (mode === 'edit' && bookings[tableId]) {
+      bookingTitle.textContent = '예약 수정';
+      const bk = bookings[tableId];
+      inputDate.value = bk.date || '';
+      inputDay.value = bk.day || '';
+      inputMgr.value = bk.manager || '';
+      inputCohort.value = bk.cohort || '';
+      inputTeam.value = bk.team || '';
+      inputType.value = bk.type || '';
+    } else {
+      bookingTitle.textContent = '예약 추가';
+      inputDate.value = todayStr();
+      inputDay.value = getDayName(todayStr());
+      inputMgr.value = '';
+      inputCohort.value = '';
+      inputTeam.value = '';
+      inputType.value = '';
+    }
+    modalBooking.classList.add('open');
+    setTimeout(() => inputMgr.focus(), 100);
+  }
+  function closeBookingModal() { modalBooking.classList.remove('open'); }
+
+  document.getElementById('btn-booking-cancel').addEventListener('click', closeBookingModal);
+  modalBooking.addEventListener('click', e => { if (e.target === modalBooking) closeBookingModal(); });
+
+  document.getElementById('btn-booking-save').addEventListener('click', () => {
+    const date = inputDate.value.trim();
+    const day = inputDay.value.trim();
+    const manager = inputMgr.value.trim();
+    const cohort = inputCohort.value.trim();
+    const team = inputTeam.value.trim();
+    const type = inputType.value;
+    if (!date) { alert('날짜를 선택하세요.'); return; }
+    if (!manager) { alert('매니저 이름을 입력하세요.'); return; }
+    if (!cohort) { alert('기수를 입력하세요.'); return; }
+    if (!team) { alert('팀명을 입력하세요.'); return; }
+    if (!type) { alert('유형을 선택하세요.'); return; }
+    const data = { date, day, manager, cohort, team, type };
+    if (currentBookingMode === 'edit') updateBooking(currentBookingTableId, data);
+    else addBooking(currentBookingTableId, data);
+    closeBookingModal();
+  });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
