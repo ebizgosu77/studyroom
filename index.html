@@ -750,7 +750,7 @@
     const isConsulting = t.type === 'consulting';
     const label = getTableLabel(t);
     const monitorTxt = t.monitor ? '🖥️ 모니터' : '— 모니터 없음';
-    const displayName = t.id === '5F-D1' ? '5층 상담실' : t.name;
+    const displayName = t.id === '5F-D1' ? '5층 상담실' : t.id === '5F-A2' ? '5F-A2 (강의실 뒤쪽)' : t.name;
 
     let cls = 'room-card';
     if (bk) cls += ' reserved';
@@ -851,7 +851,7 @@
   function openDetailModal(tableId) {
     let t = null;
     for (const fl of [3,4,5]) { t = TABLES[fl].find(x => x.id === tableId); if (t) break; }
-    const displayName = t.id === '5F-D1' ? '5층 상담실' : t.name;
+    const displayName = t.id === '5F-D1' ? '5층 상담실' : t.id === '5F-A2' ? '5F-A2 (강의실 뒤쪽)' : t.name;
     document.getElementById('detail-modal-title').textContent = displayName;
     document.getElementById('detail-modal-sub').textContent = `${getTableLabel(t)} · ${t.seats}인석 · ${t.monitor ? '모니터 있음' : '모니터 없음'}`;
 
@@ -940,7 +940,7 @@
     currentBookingMode = mode;
     let t = null;
     for (const fl of [3,4,5]) { t = TABLES[fl].find(x => x.id === tableId); if (t) break; }
-    const displayName = t.id === '5F-D1' ? '5층 상담실' : t.name;
+    const displayName = t.id === '5F-D1' ? '5층 상담실' : t.id === '5F-A2' ? '5F-A2 (강의실 뒤쪽)' : t.name;
     bookingSub.textContent = `${displayName} · ${getTableLabel(t)} · ${t.seats}인석 · ${t.monitor ? '모니터 있음' : '모니터 없음'}`;
 
     if (mode === 'edit' && bookings[tableId]) {
